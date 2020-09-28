@@ -13,6 +13,15 @@
 
 ## Deploy Instructions
 * Start SQL server on your machine and create an empty schema named "devdb" using MySQL
+* Create a file dev.env in config folder and it should have the following fields:
+  ```Javascript
+  {
+    HOST=localhost
+    username=root
+    PASSWORD=[your_password]
+    DB=devdb
+   }
+  ```
 * Run "npm run dev" command on terminal
 * Use Postman or any other endpoint application to test the API endpoints
 * Swagger documentation for APIs: https://app.swaggerhub.com/apis-docs/csye6225/fall2020-csye6225/assignment-02
