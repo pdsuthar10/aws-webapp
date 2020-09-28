@@ -27,7 +27,7 @@
   "scripts": {
     "start": "node",
     "dev": "env-cmd -f ./config/dev.env nodemon",
-    "test": "jest --watchAll"
+    "test": "jest"
   },
   "jest": {
     "testEnvironment": "node"
