@@ -21,11 +21,11 @@ exports.create = async (req, res) => {
     });
 
     let validation = schema.validate(req.body);
-    if(validation.error) return res.status(400).send(validation.error.details[0].message);
+    if(validation.error) return res.status(400).send({Error: validation.error.details[0].message});
 
     const label = "Password";
     validation = passwordComplexity(undefined, label).validate(password);
-    if(validation.error) return res.status(400).send(validation.error.details[0].message);
+    if(validation.error) return res.status(400).send({Error: validation.error.details[0].message});
 
 
     let result = await User.findOne({where: {email_address: req.body.email_address}});
@@ -56,7 +56,7 @@ exports.findOne = async (req, res) => {
     if (!credentials || !await check(credentials.name, credentials.pass)) {
         res.statusCode = 401
         res.setHeader('WWW-Authenticate', 'Basic realm="example"')
-        res.end('Access denied')
+        res.send({Error: "Access denied"})
     } else {
         let user = await User.findOne({where: {email_address: credentials.name}});
         user = _.pick(user, ['id','first_name','last_name','email_address','account_created','account_updated']);
@@ -79,14 +79,14 @@ exports.update = async (req, res) => {
     if (!credentials || !await check(credentials.name, credentials.pass)) {
         res.statusCode = 401
         res.setHeader('WWW-Authenticate', 'Basic realm="example"')
-        res.end('Access denied')
+        res.send({Error: "Access denied"})
     } else {
         if(req.body.constructor === Object && Object.keys(req.body).length === 0)
             return res.sendStatus(400)
 
         const { account_created, account_updated, id , email_address} = req.body;
         if(account_created || account_updated || id || email_address)
-            return res.sendStatus(400)
+            return res.status(400).send({Error: "User cannot update their email, id, or account's timestamps"})
 
         const { first_name, last_name, password} = req.body;
         if(!first_name || !last_name || !password)
@@ -96,7 +96,7 @@ exports.update = async (req, res) => {
 
         const label = "Password";
         const validation = passwordComplexity(undefined, label).validate(password);
-        if(validation.error) return res.status(400).send(validation.error.details[0].message);
+        if(validation.error) return res.status(400).send({Error: validation.error.details[0].message});
 
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password,salt);
@@ -118,10 +118,10 @@ exports.isAuthorized = async (req, res) => {
     if (!credentials || !validateEmail(credentials.name)) {
         res.statusCode = 401
         res.setHeader('WWW-Authenticate', 'Basic realm="example"')
-        res.end('Access denied')
+        res.send({Error: "Access denied"})
     }
     else
-        res.status(200).send('Access granted');
+        res.status(200).send({"Message":'Access granted'});
 }
 
 exports.generateHash = async (req, res) => {
