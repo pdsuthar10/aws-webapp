@@ -82,26 +82,45 @@ exports.update = async (req, res) => {
         res.send({Error: "Access denied"})
     } else {
         if(req.body.constructor === Object && Object.keys(req.body).length === 0)
-            return res.sendStatus(400)
+            return res.status(400).send({Error: "Incomplete Information"})
 
         const { account_created, account_updated, id , email_address} = req.body;
         if(account_created || account_updated || id || email_address)
             return res.status(400).send({Error: "User cannot update their email, id, or account's timestamps"})
 
         const { first_name, last_name, password} = req.body;
-        if(!first_name || !last_name || !password)
-            return res.status(400).send({Error: 'Request body should include first_name, last_name, password'})
 
-        let user = {first_name,last_name, password};
+        if(!first_name && !last_name && !password)
+            return res.status(400).send({Error: 'Request body should either first_name, last_name or password'})
 
-        const label = "Password";
-        const validation = passwordComplexity(undefined, label).validate(password);
-        if(validation.error) return res.status(400).send({Error: validation.error.details[0].message});
+        let listOfKeys = Object.keys(req.body);
 
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password,salt);
+        let i = 0;
+        for(;i<listOfKeys.length;i++){
+            if(req.body[listOfKeys[i]].length == 0)
+                return res.status(400).send({Error: 'Parameters should not be empty'});
+        }
 
-        let result = await User.update(user, { where: {email_address: credentials.name}});
+        let oldUser = await User.findOne({where: {email_address: credentials.name}});
+        if(!oldUser) return res.status(500).send({Error: "Internal error"});
+
+        let userToUpdate = _.pick(oldUser,['first_name','last_name','id','email_address','password'])
+
+        for(i=0;i<listOfKeys.length;i++){
+            if(listOfKeys[i].toString() === "password"){
+                const label = "Password";
+                const validation = passwordComplexity(undefined, label).validate(password);
+                if(validation.error) return res.status(400).send({Error: validation.error.details[0].message});
+
+                const salt = await bcrypt.genSalt(10);
+                userToUpdate.password = await bcrypt.hash(password,salt);
+
+            }else{
+                userToUpdate[listOfKeys[i]] = req.body[listOfKeys[i]]
+            }
+        }
+
+        let result = await User.update(userToUpdate, { where: {email_address: credentials.name}});
         if(!result) res.status(400).send({Error: `Cannot update the user with email: ${credentials.name}`})
 
         res.sendStatus(204)
