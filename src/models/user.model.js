@@ -29,5 +29,6 @@ module.exports = (sequelize, Sequelize) => {
         createdAt: 'account_created',
         updatedAt: 'account_updated'
     });
+
     return User;
 };

@@ -5,6 +5,8 @@ module.exports = app => {
 
     router.post("/", users.create);
 
+    router.get("/:user_id", users.getUser);
+
     router.get("/checkAuthorization", users.isAuthorized);
 
     router.post("/generateHash", users.generateHash);

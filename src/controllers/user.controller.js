@@ -64,14 +64,11 @@ exports.findOne = async (req, res) => {
     }
 };
 
-async function check (name, pass) {
-    let result = await User.findOne({where: {email_address: name}});
-    if(!result) return false;
+exports.getUser = async (req,res) => {
+    let user = await User.findByPk(req.params.user_id);
+    if(!user) return res.status(404).send({Error: "User not found"})
 
-    result = await bcrypt.compare(pass,result.password);
-    if(!result) return false;
-
-    return true;
+    return res.status(200).send(_.pick(user,['id','first_name','last_name','email_address','account_created','account_updated']));
 }
 
 exports.update = async (req, res) => {
@@ -149,3 +146,6 @@ exports.generateHash = async (req, res) => {
     user.password = await bcrypt.hash(req.body.password,salt);
     res.status(201).send(user);
 }
+
+
+

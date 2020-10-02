@@ -3,7 +3,7 @@ const app = require('./app');
 const db = require("./models");
 // db.sequelize.sync();
 
-db.sequelize.sync();
+db.sequelize.sync({force: true});
 
 // set port, listen for requests
 // const PORT = process.env.PORT || 8080;
