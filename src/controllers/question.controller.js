@@ -4,6 +4,7 @@ const Op = db.Sequelize.Op;
 const User = db.users;
 const { v4: uuidv4 } = require('uuid');
 const Category = db.categories;
+const Answer = db.answers;
 const auth = require('basic-auth')
 const joi = require('joi');
 const bcrypt = require('bcrypt');
@@ -40,40 +41,178 @@ exports.create = async (req, res) => {
         let validation = schema.validate(req.body);
         if(validation.error) return res.status(400).send({Error: validation.error.details[0].message});
 
-        if(!req.body.categories) return res.status(400).send({Error: "No categories supplied"});
-
-        let categoryList = await Category.findAll();
         let user = await User.findOne({where: {email_address: credentials.name}});
 
         let question = {
             question_id: uuidv4(),
             question_text: req.body.question_text,
         }
-        let result = await Question.create(question)
-        if(!result) return res.status(500).send({Error: "Internal Error"});
+        let questionCreated = await Question.create(question)
+        if(!questionCreated) return res.status(500).send({Error: "Internal Error"});
 
-        await user.addQuestion(result)
+        await user.addQuestion(questionCreated)
 
-        let i = 0
-        for(;i<req.body.categories.length;i++){
-            let questionCategory = req.body.categories[i]
-            let store = {
-                category_id: uuidv4(),
-                category: questionCategory.category
+        if(req.body.categories){
+            let i = 0
+            for(;i<req.body.categories.length;i++){
+                let questionCategory = req.body.categories[i]
+                let [categoryToAdd, created] = await Category.findOrCreate({where: {category: questionCategory.category},
+                    defaults: {
+                        category_id: uuidv4()
+                    }
+                })
+
+                await questionCreated.addCategory(categoryToAdd)
             }
-            if(!categoryList.includes(questionCategory.category)){
-                let categoryAdded = await Category.create(store)
-                await result.addCategory(categoryAdded);
-                await categoryAdded.addQuestion(result)
-            }
-            else{
-                let categoryToAdd = await Category.findOne({where: {category: questionCategory.category}})
-                await result.addCategory(categoryToAdd);
-                await categoryToAdd.addQuestion(result)
-            }
+
         }
 
+        const result = await Question.findByPk(questionCreated.question_id,{
+            include: [
+                {
+                    model: Category,
+                    through: { attributes: [] }
+                },
+                {
+                    as: 'answers',
+                    model: Answer
+                }]
+        })
+
         return res.status(201).send(result);
+    }
+}
+
+exports.getAllQuestions = async (req,res) => {
+    const result = await Question.findAll({
+        include: [
+            {
+                model: Category,
+                through: { attributes: [] }
+            },
+            {
+                as: 'answers',
+                model: Answer
+            }
+        ]
+    })
+
+    res.status(200).send(result)
+}
+
+exports.getQuestion = async (req,res) => {
+    const result = await Question.findByPk(req.params.question_id,{
+        include: [
+            {
+                model: Category,
+                through: { attributes: [] }
+            },
+            {
+                as: 'answers',
+                model: Answer
+            }]
+    })
+
+    if(!result) return res.status(404).send({Error: "Question not found"})
+
+    res.status(200).send(result);
+}
+
+async function checkUserForQuestion(username, user_id){
+    const user = await User.findOne({where: {email_address: username}});
+    if(user.id === user_id)
+        return true;
+
+    return false;
+
+}
+
+exports.deleteQuestion = async (req,res) => {
+    const credentials = auth(req);
+    if (!credentials || !await check(credentials.name, credentials.pass)) {
+        res.statusCode = 401
+        res.setHeader('WWW-Authenticate', 'Basic realm="example"')
+        res.send({Error: "Access denied"})
+        return;
+    }
+
+
+    let question = await Question.findByPk(req.params.question_id)
+    if(!question) return res.status(404).send({Error: "Question not found"})
+
+    let user = await checkUserForQuestion(credentials.name, question.user_id)
+
+    if(!user) return res.status(401).send({Error: "User unauthorized"})
+
+    user = await User.findOne({where: {email_address: credentials.name}});
+    let answers = await question.getAnswers();
+    if(answers.length === 0){
+        let result = await Question.destroy({ where: {question_id: question.question_id}})
+        if(!result) return res.status(500).send({Error: 'Internal error'})
+        await user.removeQuestion(result);
+        return res.status(204).send({"Message": "Successfully deleted"})
+    }
+    return res.status(400).send({Error: "The question has 1 or more answers."})
+
+}
+
+exports.updateQuestion = async (req, res) => {
+    const credentials = auth(req);
+    if (!credentials || !await check(credentials.name, credentials.pass)) {
+        res.statusCode = 401
+        res.setHeader('WWW-Authenticate', 'Basic realm="example"')
+        res.send({Error: "Access denied"})
+        return;
+    }
+
+    let question = await Question.findByPk(req.params.question_id)
+    if(!question) return res.status(404).send({Error: "Question not found"})
+
+    let user = await User.findOne({where: {email_address: credentials.name}});
+    if(user.id !== question.user_id) return res.status(401).send({Error: "User unauthorized"})
+
+    const arraySchema = joi.array().items(
+        joi.object({
+            category: joi.string()
+        })
+    );
+    const schema = joi.object().keys({
+        question_text: joi.string(),
+        categories: arraySchema
+    });
+
+    const { question_text, categories } = req.body;
+
+    if(!question_text && !categories) return res.status(400).send({Error: "No field supplied to update"})
+
+    let validation = schema.validate(req.body);
+    if(validation.error) return res.status(400).send({Error: validation.error.details[0].message});
+
+    let updatedQuestion = {}
+
+    if(question_text){
+        updatedQuestion.question_text = question_text
+    }
+
+    await Question.update(updatedQuestion, { where: { question_id: req.params.question_id}})
+
+    let questionUpdated = await Question.findByPk(req.params.question_id)
+
+    if(categories){
+        await questionUpdated.setCategories([]);
+        let i = 0
+        for(;i<categories.length;i++){
+            let questionCategory = categories[i]
+            let [categoryToAdd, created] = await Category.findOrCreate({where: {category: questionCategory.category},
+                defaults: {
+                    category_id: uuidv4()
+                }
+            })
+
+            await questionUpdated.addCategory(categoryToAdd)
+        }
 
     }
+    res.status(204).send({});
+
 }

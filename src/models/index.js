@@ -46,12 +46,11 @@ User.hasMany(Answer, {
 db.categories.belongsToMany(db.questions, {through: 'QuestionsCategory'})
 db.questions.belongsToMany(db.categories, {through: 'QuestionsCategory'})
 
-Question.hasMany(Answer, {
+db.questions.hasMany(db.answers, {
     as: 'answers',
     foreignKey: {
         name : "question_id",
-        type: Sequelize.UUID,
-        unique: true
+        type: Sequelize.UUID
     }
 })
 

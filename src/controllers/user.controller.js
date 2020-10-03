@@ -49,6 +49,15 @@ exports.create = async (req, res) => {
         });
 };
 
+async function check (name, pass) {
+    let result = await User.findOne({where: {email_address: name}});
+    if(!result) return false;
+
+    result = await bcrypt.compare(pass,result.password);
+    if(!result) return false;
+
+    return true;
+}
 
 exports.findOne = async (req, res) => {
     const credentials = auth(req);
