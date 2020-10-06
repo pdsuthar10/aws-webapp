@@ -18,5 +18,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 require("./routes/user.routes")(app);
 
+require("./routes/question.routes")(app);
+
+
 module.exports = app;
 

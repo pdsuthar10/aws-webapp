@@ -16,7 +16,7 @@ exports.create = async (req, res) => {
     const schema = joi.object().keys({
        first_name: joi.string().min(3).required(),
         last_name: joi.string().min(3).required(),
-        email_address: joi.string().email().required(),
+        username: joi.string().email().required(),
         password: joi.string().min(8).required()
     });
 
@@ -28,18 +28,18 @@ exports.create = async (req, res) => {
     if(validation.error) return res.status(400).send({Error: validation.error.details[0].message});
 
 
-    let result = await User.findOne({where: {email_address: req.body.email_address}});
+    let result = await User.findOne({where: {username: req.body.username}});
     if(result) return  res.status(400).send({Error: "User already exist"});
 
 
-    const user = _.pick(req.body,['first_name','last_name','email_address','password']);
+    const user = _.pick(req.body,['first_name','last_name','username','password']);
     user.id = uuidv4();
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(user.password,salt);
 
     User.create(user)
         .then(data => {
-            res.status(201).send(_.pick(data,['id','first_name','last_name','email_address','account_created','account_updated']));
+            res.status(201).send(_.pick(data,['id','first_name','last_name','username','account_created','account_updated']));
         })
         .catch(err => {
             res.status(500).send({
@@ -49,6 +49,15 @@ exports.create = async (req, res) => {
         });
 };
 
+async function check (name, pass) {
+    let result = await User.findOne({where: {username: name}});
+    if(!result) return false;
+
+    result = await bcrypt.compare(pass,result.password);
+    if(!result) return false;
+
+    return true;
+}
 
 exports.findOne = async (req, res) => {
     const credentials = auth(req);
@@ -58,20 +67,17 @@ exports.findOne = async (req, res) => {
         res.setHeader('WWW-Authenticate', 'Basic realm="example"')
         res.send({Error: "Access denied"})
     } else {
-        let user = await User.findOne({where: {email_address: credentials.name}});
-        user = _.pick(user, ['id','first_name','last_name','email_address','account_created','account_updated']);
+        let user = await User.findOne({where: {username: credentials.name}});
+        user = _.pick(user, ['id','first_name','last_name','username','account_created','account_updated']);
         res.status(200).send(user);
     }
 };
 
-async function check (name, pass) {
-    let result = await User.findOne({where: {email_address: name}});
-    if(!result) return false;
+exports.getUser = async (req,res) => {
+    let user = await User.findByPk(req.params.user_id);
+    if(!user) return res.status(404).send({Error: "User not found"})
 
-    result = await bcrypt.compare(pass,result.password);
-    if(!result) return false;
-
-    return true;
+    return res.status(200).send(_.pick(user,['id','first_name','last_name','username','account_created','account_updated']));
 }
 
 exports.update = async (req, res) => {
@@ -84,8 +90,8 @@ exports.update = async (req, res) => {
         if(req.body.constructor === Object && Object.keys(req.body).length === 0)
             return res.status(400).send({Error: "Incomplete Information"})
 
-        const { account_created, account_updated, id , email_address} = req.body;
-        if(account_created || account_updated || id || email_address)
+        const { account_created, account_updated, id , username} = req.body;
+        if(account_created || account_updated || id || username)
             return res.status(400).send({Error: "User cannot update their email, id, or account's timestamps"})
 
         const { first_name, last_name, password} = req.body;
@@ -101,10 +107,10 @@ exports.update = async (req, res) => {
                 return res.status(400).send({Error: 'Parameters should not be empty'});
         }
 
-        let oldUser = await User.findOne({where: {email_address: credentials.name}});
+        let oldUser = await User.findOne({where: {username: credentials.name}});
         if(!oldUser) return res.status(500).send({Error: "Internal error"});
 
-        let userToUpdate = _.pick(oldUser,['first_name','last_name','id','email_address','password'])
+        let userToUpdate = _.pick(oldUser,['first_name','last_name','id','username','password'])
 
         for(i=0;i<listOfKeys.length;i++){
             if(listOfKeys[i].toString() === "password"){
@@ -120,7 +126,7 @@ exports.update = async (req, res) => {
             }
         }
 
-        let result = await User.update(userToUpdate, { where: {email_address: credentials.name}});
+        let result = await User.update(userToUpdate, { where: {username: credentials.name}});
         if(!result) res.status(400).send({Error: `Cannot update the user with email: ${credentials.name}`})
 
         res.sendStatus(204)
@@ -149,3 +155,6 @@ exports.generateHash = async (req, res) => {
     user.password = await bcrypt.hash(req.body.password,salt);
     res.status(201).send(user);
 }
+
+
+

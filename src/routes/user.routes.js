@@ -5,13 +5,16 @@ module.exports = app => {
 
     router.post("/", users.create);
 
+    router.get("/self", users.findOne);
+
     router.get("/checkAuthorization", users.isAuthorized);
 
     router.post("/generateHash", users.generateHash);
 
-    router.get("/self", users.findOne);
-
     router.put("/self", users.update);
 
-    app.use('/v1/users', router);
+    router.get("/:user_id", users.getUser);
+
+
+    app.use('/v1/user', router);
 };
