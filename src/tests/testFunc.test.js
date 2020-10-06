@@ -6,7 +6,7 @@ const assert = require('assert');
 describe('GET /checkAuthorization', () => {
     it("should authorize the user", async() => {
         let result = await request(app)
-            .get('/v1/users/checkAuthorization')
+            .get('/v1/user/checkAuthorization')
             .set('Authorization', 'Basic '+new Buffer.from("test@test.com:Test@1234").toString("base64"))
             .expect(200)
         if(!result) return false;
@@ -14,7 +14,7 @@ describe('GET /checkAuthorization', () => {
 
     it("should not authorize the user", async() => {
         let result = await request(app)
-            .get('/v1/users/checkAuthorization')
+            .get('/v1/user/checkAuthorization')
             .set('Authorization', 'Basic '+new Buffer.from("test@test.com:Test@1234"))
             .expect(401)
         if(!result) return false;
@@ -30,7 +30,7 @@ describe('POST /users', ()=>{
             password: "Hello@world1"
         }
         let result = await request(app)
-            .post('/v1/users/generateHash')
+            .post('/v1/user/generateHash')
             .send(user)
             .set('Accept','application/json')
             .expect(201)
@@ -41,7 +41,7 @@ describe('POST /users', ()=>{
 
     it('should return an error because of the body structure', async ()=>{
         let result = await request(app)
-            .post('/v1/users')
+            .post('/v1/user')
             .send({
                 firstName: "hello"
             })
