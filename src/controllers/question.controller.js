@@ -56,7 +56,7 @@ exports.create = async (req, res) => {
             let i = 0
             for(;i<req.body.categories.length;i++){
                 let questionCategory = req.body.categories[i]
-                let [categoryToAdd, created] = await Category.findOrCreate({where: {category: questionCategory.category},
+                let [categoryToAdd, created] = await Category.findOrCreate({where: {category: questionCategory.category.toLowerCase()},
                     defaults: {
                         category_id: uuidv4()
                     }
@@ -202,7 +202,7 @@ exports.updateQuestion = async (req, res) => {
         let i = 0
         for(;i<categories.length;i++){
             let questionCategory = categories[i]
-            let [categoryToAdd, created] = await Category.findOrCreate({where: {category: questionCategory.category},
+            let [categoryToAdd, created] = await Category.findOrCreate({where: {category: questionCategory.category.toLowerCase()},
                 defaults: {
                     category_id: uuidv4()
                 }
