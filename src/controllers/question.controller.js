@@ -10,7 +10,7 @@ const joi = require('joi');
 const bcrypt = require('bcrypt');
 
 async function check (name, pass) {
-    let result = await User.findOne({where: {email_address: name}});
+    let result = await User.findOne({where: {username: name}});
     if(!result) return false;
 
     result = await bcrypt.compare(pass,result.password);
@@ -41,7 +41,7 @@ exports.create = async (req, res) => {
         let validation = schema.validate(req.body);
         if(validation.error) return res.status(400).send({Error: validation.error.details[0].message});
 
-        let user = await User.findOne({where: {email_address: credentials.name}});
+        let user = await User.findOne({where: {username: credentials.name}});
 
         let question = {
             question_id: uuidv4(),
@@ -119,7 +119,7 @@ exports.getQuestion = async (req,res) => {
 }
 
 async function checkUserForQuestion(username, user_id){
-    const user = await User.findOne({where: {email_address: username}});
+    const user = await User.findOne({where: {username: username}});
     if(user.id === user_id)
         return true;
 
@@ -144,12 +144,11 @@ exports.deleteQuestion = async (req,res) => {
 
     if(!user) return res.status(401).send({Error: "User unauthorized"})
 
-    user = await User.findOne({where: {email_address: credentials.name}});
+    user = await User.findOne({where: {username: credentials.name}});
     let answers = await question.getAnswers();
     if(answers.length === 0){
         let result = await Question.destroy({ where: {question_id: question.question_id}})
         if(!result) return res.status(500).send({Error: 'Internal error'})
-        await user.removeQuestion(result);
         return res.status(204).send({"Message": "Successfully deleted"})
     }
     return res.status(400).send({Error: "The question has 1 or more answers."})
@@ -168,7 +167,7 @@ exports.updateQuestion = async (req, res) => {
     let question = await Question.findByPk(req.params.question_id)
     if(!question) return res.status(404).send({Error: "Question not found"})
 
-    let user = await User.findOne({where: {email_address: credentials.name}});
+    let user = await User.findOne({where: {username: credentials.name}});
     if(user.id !== question.user_id) return res.status(401).send({Error: "User unauthorized"})
 
     const arraySchema = joi.array().items(

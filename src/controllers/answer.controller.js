@@ -10,7 +10,7 @@ const joi = require('joi');
 const bcrypt = require('bcrypt');
 
 async function check (name, pass) {
-    let result = await User.findOne({where: {email_address: name}});
+    let result = await User.findOne({where: {username: name}});
     if(!result) return false;
 
     result = await bcrypt.compare(pass,result.password);
@@ -29,7 +29,7 @@ exports.create = async (req, res) => {
         return;
     }
 
-    const user = await User.findOne({ where: { email_address: credentials.name}})
+    const user = await User.findOne({ where: { username: credentials.name}})
 
     const question = await Question.findByPk(req.params.question_id);
     if(!question) return res.status(404).send({Error: "Question not found"})
@@ -76,14 +76,16 @@ exports.updateAnswer = async (req,res) => {
         res.send({Error: "Access denied"})
         return;
     }
-    const user = await User.findOne({ where: { email_address: credentials.name}})
+    const user = await User.findOne({ where: { username: credentials.name}})
 
     const question = await Question.findByPk(req.params.question_id)
     if(!question) return res.status(404).send({Error: "Question Not found"})
 
-    const answer = await Answer.findByPk(req.params.answer_id)
-    if(!answer) return res.status(404).send({Error: "Answer not found"})
+    // const answer = await Answer.findByPk(req.params.answer_id)
+    let answer = await question.getAnswers({ where: {answer_id: req.params.answer_id}});
+    if(answer.length === 0) return res.status(404).send({Error: "Answer not found for this question"})
 
+    answer = answer[0];
     if(answer.user_id !== user.id) return res.status(401).send({Error: "User unauthorised"})
 
     const schema = joi.object().keys({
@@ -111,14 +113,15 @@ exports.deleteAnswer = async (req, res) => {
         res.send({Error: "Access denied"})
         return;
     }
-    const user = await User.findOne({ where: { email_address: credentials.name}})
+    const user = await User.findOne({ where: { username: credentials.name}})
 
     const question = await Question.findByPk(req.params.question_id)
     if(!question) return res.status(404).send({Error: "Question Not found"})
 
-    const answer = await Answer.findByPk(req.params.answer_id)
-    if(!answer) return res.status(404).send({Error: "Answer not found"})
+    let answer = await question.getAnswers({ where: {answer_id: req.params.answer_id}});
+    if(answer.length === 0) return res.status(404).send({Error: "Answer not found for given question"})
 
+    answer = answer[0];
     if(answer.user_id !== user.id) return res.status(401).send({Error: "User unauthorised"})
 
     await user.removeAnswer(answer)
