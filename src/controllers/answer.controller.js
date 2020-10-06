@@ -61,7 +61,7 @@ exports.getAnswerOne = async (req,res) => {
     if(!question) return res.status(404).send({Error: "Question not found"})
 
     const answer = await question.getAnswers( { where: {answer_id: req.params.answer_id}})
-    if(answer.length === 0) return res.status(404).send({Error: "Answer not found"})
+    if(answer.length === 0) return res.status(404).send({Error: "Answer not found for this question"})
 
     return res.status(200).send(answer[0])
 
