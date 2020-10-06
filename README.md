@@ -14,7 +14,7 @@ A Node.js web app that runs different REST API endpoints on backend to create, a
 
 ## Deploy Instructions
 * Start SQL server on your machine and create an empty schema named "devdb" using MySQL
-* Create a file dev.env in config folder and it should have the following fields:
+* Create a file .env in src folder and it should have the following fields:
   ```Javascript
   {
     HOST=localhost
@@ -23,9 +23,10 @@ A Node.js web app that runs different REST API endpoints on backend to create, a
     DB=devdb
    }
   ```
+* Environment variables can also be set through command lines
 * Run "npm run dev" command on terminal
 * Use Postman or any other endpoint application to test the API endpoints
-* Swagger documentation for APIs: https://app.swaggerhub.com/apis-docs/csye6225/fall2020-csye6225/assignment-02
+* Swagger documentation for APIs: https://app.swaggerhub.com/apis-docs/csye6225/fall2020-csye6225/assignment-03#/
 
 ## Running Tests
 * Run "npm run test" on webapp directory
