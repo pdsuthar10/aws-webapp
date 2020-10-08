@@ -61,10 +61,8 @@ exports.create = async (req, res) => {
                         category_id: uuidv4()
                     }
                 })
-
                 await questionCreated.addCategory(categoryToAdd)
             }
-
         }
 
         const result = await Question.findByPk(questionCreated.question_id,{
