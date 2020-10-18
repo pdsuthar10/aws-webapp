@@ -60,7 +60,14 @@ exports.create = async (req, res) => {
     await question.addAnswer(answer)
     await user.addAnswer(answer)
 
-    answer = await Answer.findOne({ where : {answer_id: answer.answer_id}});
+    answer = await Answer.findOne({
+        where : {answer_id: answer.answer_id},
+        include : {
+            as: 'attachments',
+            model: File,
+            attributes: ['file_name','s3_object_name','file_id','created_date']
+        }
+    });
 
     res.status(201).send(answer)
 }
