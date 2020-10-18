@@ -14,6 +14,9 @@ const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
 const s3 = new aws.S3();
 const path = require('path');
+require('dotenv').config();
+
+
 
 async function check (name, pass) {
     let result = await User.findOne({where: {username: name}});
@@ -158,16 +161,17 @@ exports.attachFile = async (req, res) =>{
     answer = answer[0];
     if(answer.user_id !== user.id) return res.status(401).send({Error: "User unauthorised"})
 
+    const fileID = uuidv4();
 
     const upload = multer({
         storage: multerS3({
             s3: s3,
-            bucket: 'webapp.priyam.suthar',
+            bucket: process.env.BUCKET_NAME,
             metadata: function (req, file, cb) {
                 cb(null, Object.assign({}, req.body));
             },
             key: function (req, file, cb) {
-                cb(null, req.params.question_id + "/" +req.params.answer_id + "/" + path.basename( file.originalname, path.extname( file.originalname ) ) + path.extname( file.originalname ) )
+                cb(null, req.params.answer_id + "/" + fileID + "/" + path.basename( file.originalname, path.extname( file.originalname ) ) + path.extname( file.originalname ) )
             }
         }),
         limits:{ fileSize: 2000000 }, // In bytes: 2000000 bytes = 2 MB
@@ -184,7 +188,7 @@ exports.attachFile = async (req, res) =>{
         // console.log(req.file);
         const fileToAttach = {
             file_name: req.file.originalname,
-            file_id: uuidv4(),
+            file_id: fileID,
             s3_object_name: req.file.key
         }
 
@@ -241,7 +245,7 @@ exports.deleteFile = async (req, res) => {
     await File.destroy({where: {file_id: req.params.file_id}})
 
     let params = {
-        Bucket: 'webapp.priyam.suthar',
+        Bucket: process.env.BUCKET_NAME,
         Key: file.s3_object_name
     }
     s3.deleteObject(params, function(err, data) {
