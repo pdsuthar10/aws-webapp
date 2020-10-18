@@ -69,10 +69,18 @@ exports.getAnswerOne = async (req,res) => {
     const question = await Question.findByPk(req.params.question_id);
     if(!question) return res.status(404).send({Error: "Question not found"})
 
-    const answer = await question.getAnswers( { where: {answer_id: req.params.answer_id}})
+    let answer = await question.getAnswers( { where: {answer_id: req.params.answer_id}})
     if(answer.length === 0) return res.status(404).send({Error: "Answer not found for this question"})
 
-    return res.status(200).send(answer[0])
+    answer = await Answer.findByPk(req.params.answer_id,{
+        include : {
+            as: 'attachments',
+            model: File,
+            attributes: ['file_name','s3_object_name','file_id','created_date']
+        }
+    })
+
+    return res.status(200).send(answer)
 
 }
 
