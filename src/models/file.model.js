@@ -12,6 +12,18 @@ module.exports = (sequelize, Sequelize) => {
         file_id : {
             type: Sequelize.UUID,
             primaryKey: true
+        },
+        LastModified: {
+            type: Sequelize.STRING,
+            allowNull: false
+        },
+        ContentLength: {
+            type: Sequelize.STRING,
+            allowNull: false
+        },
+        ETag: {
+            type: Sequelize.STRING,
+            allowNull: false
         }
     }, {
         timestamps: true,

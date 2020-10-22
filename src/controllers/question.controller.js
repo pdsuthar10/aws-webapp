@@ -86,7 +86,7 @@ exports.create = async (req, res) => {
                 {
                     as: 'attachments',
                     model: File,
-                    attributes: ['file_name','s3_object_name','file_id','created_date']
+                    attributes: ['file_name','s3_object_name','file_id','created_date', 'LastModified', 'ContentLength', 'ETag']
                 }]
         })
 
@@ -107,13 +107,13 @@ exports.getAllQuestions = async (req,res) => {
                 include : {
                     as: 'attachments',
                     model: File,
-                    attributes: ['file_name','s3_object_name','file_id','created_date']
+                    attributes: ['file_name','s3_object_name','file_id','created_date', 'LastModified', 'ContentLength', 'ETag']
                 }
             },
             {
                 as: 'attachments',
                 model: File,
-                attributes: ['file_name','s3_object_name','file_id','created_date']
+                attributes: ['file_name','s3_object_name','file_id','created_date', 'LastModified', 'ContentLength', 'ETag']
             }
         ]
     })
@@ -134,13 +134,13 @@ exports.getQuestion = async (req,res) => {
                 include : {
                     as: 'attachments',
                     model: File,
-                    attributes: ['file_name','s3_object_name','file_id','created_date']
+                    attributes: ['file_name','s3_object_name','file_id','created_date', 'LastModified', 'ContentLength', 'ETag']
                 }
             },
             {
                 as: 'attachments',
                 model: File,
-                attributes: ['file_name','s3_object_name','file_id','created_date']
+                attributes: ['file_name','s3_object_name','file_id','created_date', 'LastModified', 'ContentLength', 'ETag']
             }
             ]
     })
@@ -179,6 +179,20 @@ exports.deleteQuestion = async (req,res) => {
     user = await User.findOne({where: {username: credentials.name}});
     let answers = await question.getAnswers();
     if(answers.length === 0){
+        let files = await question.getAttachments();
+
+        for(let i=0;i<files.length;i++){
+            await File.destroy({where: {file_id: files[i].file_id}})
+
+            let params = {
+                Bucket: process.env.BUCKET_NAME,
+                Key: files[i].s3_object_name
+            }
+            s3.deleteObject(params, function(err, data) {
+                if (err) console.log(err, err.stack);  // error
+                else    return;   // deleted
+            });
+        }
         let result = await Question.destroy({ where: {question_id: question.question_id}})
         if(!result) return res.status(500).send({Error: 'Internal error'})
         return res.status(204).send({"Message": "Successfully deleted"})
@@ -270,14 +284,11 @@ exports.attachFile = async (req, res) =>{
         storage: multerS3({
             s3: s3,
             bucket: process.env.BUCKET_NAME,
-            metadata: function (req, file, cb) {
-                cb(null, Object.assign({}, req.body));
-            },
             key: function (req, file, cb) {
                 cb(null, req.params.question_id + "/" + fileID + "/" + path.basename( file.originalname, path.extname( file.originalname ) ) + path.extname( file.originalname ) )
             }
         }),
-        limits:{ fileSize: 2000000 }, // In bytes: 2000000 bytes = 2 MB
+        limits:{ fileSize: 5000000 }, // In bytes: 2000000 bytes = 2 MB
         fileFilter: function( req, file, cb ){
             checkFileType( file, cb );
         }
@@ -285,7 +296,7 @@ exports.attachFile = async (req, res) =>{
 
     const singleUpload = upload.single('image');
     await singleUpload(req, res, async (err) => {
-        if(err) return res.status(400).send({Error: 'Images only!'})
+        if(err) return res.status(400).send(err);
         if(!req.file) return res.status(400).send({Error: 'No File Uploaded'})
 
         // console.log(req.file);
@@ -294,6 +305,15 @@ exports.attachFile = async (req, res) =>{
             file_id: fileID,
             s3_object_name: req.file.key
         }
+        let params = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: fileToAttach.s3_object_name
+        }
+        const metadata = await s3.headObject(params).promise();
+
+        fileToAttach.LastModified = metadata.LastModified.toLocaleString()
+        fileToAttach.ContentLength = metadata.ContentLength.valueOf()
+        fileToAttach.ETag = metadata.ETag.valueOf()
 
         const file = await File.create(fileToAttach);
         await question.addAttachment(file);
