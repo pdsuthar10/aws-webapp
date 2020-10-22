@@ -23,11 +23,13 @@ db.users = require("./user.model")(sequelize, Sequelize);
 db.answers = require("./answer.model")(sequelize,Sequelize);
 db.categories = require("./category.model")(sequelize,Sequelize);
 db.questions = require("./question.model")(sequelize, Sequelize);
+db.files = require("./file.model")(sequelize, Sequelize);
 
 const User = db.users;
 const Answer = db.answers;
 const Category = db.categories;
 const Question = db.questions;
+const File = db.files;
 
 User.hasMany(Question,{
     as: 'questions',
@@ -54,5 +56,18 @@ db.questions.hasMany(db.answers, {
     }
 })
 
+Question.hasMany(File, {
+    as: 'attachments',
+    foreignKey: {
+        name: 'question_id'
+    }
+})
+
+Answer.hasMany(File, {
+    as: 'attachments',
+    foreignKey: {
+        name: 'answer_id'
+    }
+})
 
 module.exports = db;

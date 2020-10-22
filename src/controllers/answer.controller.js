@@ -5,9 +5,18 @@ const User = db.users;
 const { v4: uuidv4 } = require('uuid');
 const Category = db.categories;
 const Answer = db.answers;
+const File = db.files;
 const auth = require('basic-auth')
 const joi = require('joi');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const aws = require('aws-sdk');
+const s3 = new aws.S3();
+const path = require('path');
+require('dotenv').config();
+
+
 
 async function check (name, pass) {
     let result = await User.findOne({where: {username: name}});
@@ -51,7 +60,14 @@ exports.create = async (req, res) => {
     await question.addAnswer(answer)
     await user.addAnswer(answer)
 
-    answer = await Answer.findOne({ where : {answer_id: answer.answer_id}});
+    answer = await Answer.findOne({
+        where : {answer_id: answer.answer_id},
+        include : {
+            as: 'attachments',
+            model: File,
+            attributes: ['file_name','s3_object_name','file_id','created_date', 'LastModified', 'ContentLength', 'ETag']
+        }
+    });
 
     res.status(201).send(answer)
 }
@@ -60,10 +76,18 @@ exports.getAnswerOne = async (req,res) => {
     const question = await Question.findByPk(req.params.question_id);
     if(!question) return res.status(404).send({Error: "Question not found"})
 
-    const answer = await question.getAnswers( { where: {answer_id: req.params.answer_id}})
+    let answer = await question.getAnswers( { where: {answer_id: req.params.answer_id}})
     if(answer.length === 0) return res.status(404).send({Error: "Answer not found for this question"})
 
-    return res.status(200).send(answer[0])
+    answer = await Answer.findByPk(req.params.answer_id,{
+        include : {
+            as: 'attachments',
+            model: File,
+            attributes: ['file_name','s3_object_name','file_id','created_date', 'LastModified', 'ContentLength', 'ETag']
+        }
+    })
+
+    return res.status(200).send(answer)
 
 }
 
@@ -127,9 +151,144 @@ exports.deleteAnswer = async (req, res) => {
     await user.removeAnswer(answer)
     await question.removeAnswer(answer)
 
+    let files = await answer.getAttachments()
+    for(let i=0;i<files.length;i++){
+        await File.destroy({where: {file_id: files[i].file_id}})
+
+        let params = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: files[i].s3_object_name
+        }
+        s3.deleteObject(params, function(err, data) {
+            if (err) console.log(err, err.stack);  // error
+            else    return;   // deleted
+        });
+    }
+
     await Answer.destroy({where: { answer_id: req.params.answer_id}})
 
     return res.status(204).send()
+
+}
+
+exports.attachFile = async (req, res) =>{
+    const credentials = auth(req);
+    if (!credentials || !await check(credentials.name, credentials.pass)) {
+        res.statusCode = 401
+        res.setHeader('WWW-Authenticate', 'Basic realm="example"')
+        res.send({Error: "Access denied"})
+        return;
+    }
+    let question = await Question.findByPk(req.params.question_id)
+    if(!question) return res.status(404).send({Error: "Question not found"})
+
+    let user = await User.findOne({where: {username: credentials.name}});
+
+    let answer = await question.getAnswers({ where: {answer_id: req.params.answer_id}});
+    if(answer.length === 0) return res.status(404).send({Error: "Answer not found for given question"})
+
+    answer = answer[0];
+    if(answer.user_id !== user.id) return res.status(401).send({Error: "User unauthorised"})
+
+    const fileID = uuidv4();
+
+    const upload = multer({
+        storage: multerS3({
+            s3: s3,
+            bucket: process.env.BUCKET_NAME,
+            key: function (req, file, cb) {
+                cb(null, req.params.answer_id + "/" + fileID + "/" + path.basename( file.originalname, path.extname( file.originalname ) ) + path.extname( file.originalname ) )
+            }
+        }),
+        limits:{ fileSize: 2000000 }, // In bytes: 2000000 bytes = 2 MB
+        fileFilter: function( req, file, cb ){
+            checkFileType( file, cb );
+        }
+    })
+
+    const singleUpload = upload.single('image');
+    await singleUpload(req, res, async (err) => {
+        if(err) return res.status(400).send({Error: 'Images only!'})
+        if(!req.file) return res.status(400).send({Error: 'No File Uploaded'})
+
+        // console.log(req.file);
+        const fileToAttach = {
+            file_name: req.file.originalname,
+            file_id: fileID,
+            s3_object_name: req.file.key
+        }
+        let params = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: fileToAttach.s3_object_name
+        }
+        const metadata = await s3.headObject(params).promise();
+
+        console.log(metadata);
+
+        fileToAttach.LastModified = metadata.LastModified.toLocaleString()
+        fileToAttach.ContentLength = metadata.ContentLength.valueOf()
+        fileToAttach.ETag = metadata.ETag.valueOf()
+
+        const file = await File.create(fileToAttach);
+        await answer.addAttachment(file);
+
+        return res.status(201).send(file);
+
+    })
+
+}
+
+function checkFileType( file, cb ){
+    // Allowed ext
+    const filetypes = /jpeg|jpg|png/;
+    // Check ext
+    const extname = filetypes.test( path.extname( file.originalname ).toLowerCase());
+    // Check mime
+    const mimetype = filetypes.test( file.mimetype );
+    if( mimetype && extname ){
+        return cb( null, true );
+    } else {
+        cb( 'Error' );
+    }
+}
+
+exports.deleteFile = async (req, res) => {
+    const credentials = auth(req);
+
+    if (!credentials || !await check(credentials.name, credentials.pass)) {
+        res.statusCode = 401
+        res.setHeader('WWW-Authenticate', 'Basic realm="example"')
+        res.send({Error: "Access denied"})
+        return;
+    }
+
+    const question = await Question.findByPk(req.params.question_id)
+    if(!question) return res.status(404).send({Error: "Question Not found"})
+
+    let user = await User.findOne({where: {username: credentials.name}});
+    let answer = await question.getAnswers({ where: {answer_id: req.params.answer_id}});
+    if(answer.length === 0) return res.status(404).send({Error: "Answer not found for given question"})
+
+    answer = answer[0];
+    if(answer.user_id !== user.id) return res.status(401).send({Error: "User unauthorised"})
+
+    let file = await answer.getAttachments({ where: {file_id: req.params.file_id}})
+    if(file.length === 0) return res.status(404).send({Error: "File not found for given answer"})
+
+    file = file[0];
+
+    await answer.removeAttachment(file);
+
+    await File.destroy({where: {file_id: req.params.file_id}})
+
+    let params = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: file.s3_object_name
+    }
+    s3.deleteObject(params, function(err, data) {
+        if (err) console.log(err, err.stack);  // error
+        else    return res.status(204).send();   // deleted
+    });
 
 }
 

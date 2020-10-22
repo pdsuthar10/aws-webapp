@@ -13,7 +13,16 @@ module.exports = app => {
 
     router.put("/:question_id", questions.updateQuestion);
 
+    router.post("/:question_id/file", questions.attachFile);
+
+    router.delete("/:question_id/file/:file_id", questions.deleteFile);
+
+
     router.post("/:question_id/answer", answers.create);
+
+    router.post("/:question_id/answer/:answer_id/file", answers.attachFile);
+
+    router.delete("/:question_id/answer/:answer_id/file/:file_id", answers.deleteFile);
 
     router.get("/:question_id/answer/:answer_id", answers.getAnswerOne);
 
