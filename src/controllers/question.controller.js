@@ -299,7 +299,6 @@ exports.attachFile = async (req, res) =>{
         if(err) return res.status(400).send({Error: 'Images only!'});
         if(!req.file) return res.status(400).send({Error: 'No File Uploaded'})
 
-        // console.log(req.file);
         const fileToAttach = {
             file_name: req.file.originalname,
             file_id: fileID,
