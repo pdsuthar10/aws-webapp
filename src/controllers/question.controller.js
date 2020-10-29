@@ -288,7 +288,7 @@ exports.attachFile = async (req, res) =>{
                 cb(null, req.params.question_id + "/" + fileID + "/" + path.basename( file.originalname, path.extname( file.originalname ) ) + path.extname( file.originalname ) )
             }
         }),
-        limits:{ fileSize: 5000000 }, // In bytes: 2000000 bytes = 2 MB
+        limits:{ fileSize: 5000000 },
         fileFilter: function( req, file, cb ){
             checkFileType( file, cb );
         }
