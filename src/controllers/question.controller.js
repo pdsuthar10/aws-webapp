@@ -296,7 +296,7 @@ exports.attachFile = async (req, res) =>{
 
     const singleUpload = upload.single('image');
     await singleUpload(req, res, async (err) => {
-        if(err) return res.status(400).send(err);
+        if(err) return res.status(400).send({Error: 'Images only!'});
         if(!req.file) return res.status(400).send({Error: 'No File Uploaded'})
 
         // console.log(req.file);
