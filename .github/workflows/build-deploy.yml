@@ -1,0 +1,70 @@
+name: Build & Deploy WebApp
+
+env:
+  ARTIFACT_NAME: csye6225-webapp-${{ github.run_number }}.zip
+  CODEDEPLOY_APPLICATION_NAME: csye6225-webapp
+  CODEDEPLOY_APPLICATION_NAME: csye6225-webapp-deployment
+  AWS_REGION: us-east-1
+
+on:
+  push:
+    branches: [ a6 ]
+
+jobs:
+  CI_CD:
+    runs_on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 12.x ]
+
+    steps:
+    - uses: actions/checkout@V2
+
+    - name: Install Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y wget zip unzip
+
+
+    - name: Build Deployment Artifact
+      run: |
+        mkdir codedeploy_artifact
+        zip -r ${{ env.ARTIFACT_NAME }}.zip src codedeploy/*.sh appspec.yml --exclude src/.env
+        pwd
+        ls -al
+        mv ${{ env.ARTIFACT_NAME }}.zip codedeploy_artifact
+        cd codedeploy_artifact
+        pwd
+        ls -al
+        cd ..
+        pwd
+        ls =al
+
+    - name: Configuring AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Copy Artifact to S3
+      run: |
+        aws s3 sync ./codedeploy_artifact s3://${{ env.CODEDEPLOY_BUCKET }}
+
+    - name: Call to CodeDeploy
+      run: |
+        output=$(aws deploy create-deployment \
+        --application-name csye6225-webapp \
+        --deployment-config-name CodeDeployDefault.AllAtOnce \
+        --deployment-group-name csye6225-webapp-deployment \
+        --s3-location bucket=${{ env.CODEDEPLOY_BUCKET }},bundleType=zip,key=${{ env.ARTIFACT_NAME }} \
+        --region ${{ env.AWS_REGION }} \
+        --output json)
+
+
+
+
