@@ -57,11 +57,6 @@ jobs:
 
     - name: Call to CodeDeploy
       run: |
-#        revision=$(aws deploy register-application-revision \
-#        --application-name csye6225-webapp \
-#        --s3-location bucket=${{ secrets.CODEDEPLOY_BUCKET }},bundleType=zip,key=${{ env.ARTIFACT_NAME }}  \
-#        --region us-east-1 \
-#        --output json)
         output=$(aws deploy create-deployment \
         --application-name csye6225-webapp \
         --deployment-config-name CodeDeployDefault.AllAtOnce \
