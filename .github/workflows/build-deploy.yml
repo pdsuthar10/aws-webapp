@@ -42,7 +42,7 @@ jobs:
         ls -al
         cd ..
         pwd
-        ls =al
+        ls -al
 
     - name: Configuring AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
