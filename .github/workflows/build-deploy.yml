@@ -36,7 +36,7 @@ jobs:
         zip -r ${{ env.ARTIFACT_NAME }} src codedeploy/*.sh appspec.yml --exclude src/.env
         pwd
         ls -al
-        mv ${{ env.ARTIFACT_NAME }}.zip codedeploy_artifact
+        mv ${{ env.ARTIFACT_NAME }} codedeploy_artifact
         cd codedeploy_artifact
         pwd
         ls -al
