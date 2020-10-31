@@ -12,7 +12,7 @@ on:
 
 jobs:
   CI_CD:
-    runs_on: ubuntu-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         node-version: [ 12.x ]
