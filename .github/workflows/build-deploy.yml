@@ -27,7 +27,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get update && sudo apt-get install -y wget zip unzip
+        sudo apt-get update && sudo apt-get install -y wget zip unzip jq
 
 
     - name: Build Deployment Artifact
@@ -57,13 +57,17 @@ jobs:
 
     - name: Call to CodeDeploy
       run: |
-        output=$(aws deploy create-deployment \
+        echo $(aws deploy create-deployment \
         --application-name ${{ env.CODEDEPLOY_APPLICATION_NAME }} \
         --deployment-config-name CodeDeployDefault.AllAtOnce \
         --deployment-group-name ${{ env.CODEDEPLOY_GROUP_NAME }} \
         --s3-location bucket=${{ secrets.CODEDEPLOY_BUCKET }},bundleType=zip,key=${{ env.ARTIFACT_NAME }} \
         --region ${{ env.AWS_REGION }} \
-        --output json)
+        --output json) > id.txt
+        ls -al
+        id=$(jq '.deploymentId' id.txt)
+        aws deploy wait deployment-successful --deployment-id $id
+
 
 
 
