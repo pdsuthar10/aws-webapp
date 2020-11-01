@@ -118,7 +118,7 @@ exports.getAllQuestions = async (req,res) => {
         ]
     })
 
-    res.status(400).send(result)
+    res.status(200).send(result)
 }
 
 exports.getQuestion = async (req,res) => {
