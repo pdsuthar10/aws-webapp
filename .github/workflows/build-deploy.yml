@@ -32,6 +32,7 @@ jobs:
 
     - name: Build Deployment Artifact
       run: |
+        rm -r codedeploy_artifact
         mkdir codedeploy_artifact
         zip -r ${{ env.ARTIFACT_NAME }} src codedeploy/*.sh appspec.yml --exclude src/.env
         pwd
