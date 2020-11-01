@@ -1,0 +1,75 @@
+name: Build & Deploy WebApp
+
+env:
+  ARTIFACT_NAME: csye6225-webapp-${{ github.run_number }}.zip
+  CODEDEPLOY_APPLICATION_NAME: csye6225-webapp
+  CODEDEPLOY_GROUP_NAME: csye6225-webapp-deployment
+  AWS_REGION: us-east-1
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  CI_CD:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 12.x ]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y wget zip unzip jq
+
+
+    - name: Build Deployment Artifact
+      run: |
+        rm -r codedeploy_artifact
+        mkdir codedeploy_artifact
+        zip -r ${{ env.ARTIFACT_NAME }} src codedeploy/*.sh appspec.yml --exclude src/.env
+        pwd
+        ls -al
+        mv ${{ env.ARTIFACT_NAME }} codedeploy_artifact
+        cd codedeploy_artifact
+        pwd
+        ls -al
+        cd ..
+        pwd
+        ls -al
+
+    - name: Configuring AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Copy Artifact to S3
+      run: |
+        aws s3 sync ./codedeploy_artifact s3://${{ secrets.CODEDEPLOY_BUCKET }}
+
+    - name: Call to CodeDeploy
+      run: |
+        echo $(aws deploy create-deployment \
+        --application-name ${{ env.CODEDEPLOY_APPLICATION_NAME }} \
+        --deployment-config-name CodeDeployDefault.AllAtOnce \
+        --deployment-group-name ${{ env.CODEDEPLOY_GROUP_NAME }} \
+        --s3-location bucket=${{ secrets.CODEDEPLOY_BUCKET }},bundleType=zip,key=${{ env.ARTIFACT_NAME }} \
+        --region ${{ env.AWS_REGION }} \
+        --output json) > id.txt
+        ls -al
+        id=$(jq --raw-output '.deploymentId' id.txt)
+        aws deploy wait deployment-successful --deployment-id $id
+
+
+
+
+
