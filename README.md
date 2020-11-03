@@ -27,7 +27,7 @@ npm install
    }
   ```
 * Environment variables can also be set through command line using export command
-* Run "npm run dev" command on terminal
+* Run "npm run dev" command on terminal.
 ```shell script
 npm run dev
 ```
