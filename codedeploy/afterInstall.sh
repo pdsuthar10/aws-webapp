@@ -5,5 +5,4 @@ sudo cp .env /home/ubuntu/webapp/src
 pwd
 cd /home/ubuntu/webapp/src
 npm install
-exit 1
 
