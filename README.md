@@ -10,7 +10,7 @@ A Node.js web app that runs different REST API endpoints on backend to create, a
 ## Build Instructions
 * Clone repo using command "git clone git@github.com:sutharp-fall2020-csye6225/webapp.git"
 * Navigate to webapp directory in webapp folder using "cd webapp" command
-* Run "npm install" command on terminal
+* Run "npm install" command on terminal.
 ```shell script
 npm install
 ```
