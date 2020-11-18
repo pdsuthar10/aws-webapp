@@ -1,4 +1,5 @@
 const app = require('./app');
+const logger = require('./config/logger')
 
 const db = require("./models");
 // db.sequelize.sync();
@@ -10,4 +11,5 @@ db.sequelize.sync({force: false});
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`);
+    logger.info(`Server started successfully.`)
 });
