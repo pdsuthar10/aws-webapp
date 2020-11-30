@@ -19,8 +19,9 @@ const config = require("../config/db.config.js");
 const logger = require('../config/logger');
 const SDC = require('statsd-client');
 const sdc = new SDC({host: config.METRICS_HOSTNAME, port: config.METRICS_PORT});
-const SNS = new aws.SNS({apiVersion: '2010-03-31'});
 aws.config.update({region: 'us-east-1'})
+const SNS = new aws.SNS({apiVersion: '2010-03-31'});
+
 
 
 
@@ -109,7 +110,7 @@ exports.create = async (req, res) => {
     const userOfQuestion = await User.findOne({ where: { id: question.user_id }})
 
     const params = {
-        Message: "{ ToAddresses: userOfQuestion.username, question: question, answer: answer }",
+        Message: "{ ToAddresses: "+userOfQuestion.username+", question: "+question+", answer: "+answer+" }",
         TopicArn: "arn:aws:sns:us-east-1:315658802519:user_updates"
     }
     let publishTextPromise = SNS.publish(params).promise();
