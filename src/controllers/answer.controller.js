@@ -123,7 +123,7 @@ exports.create = async (req, res) => {
         }).catch(
         function(err) {
             console.error(err, err.stack);
-            res.status(500).send({Error: "Problem publishing to SNS..."})
+            res.status(500).send({Error: err.stack})
         });
 }
 
