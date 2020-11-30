@@ -108,11 +108,7 @@ exports.create = async (req, res) => {
     const userOfQuestion = await User.findOne({ where: { id: question.user_id }})
 
     const params = {
-        Message: {
-            ToAddresses: userOfQuestion.username,
-            question: question,
-            answer: answer
-        },
+        Message: "{ ToAddresses: userOfQuestion.username, question: question, answer: answer }",
         TopicArn: "arn:aws:sns:us-east-1:315658802519:user_updates"
     }
     let publishTextPromise = SNS.publish(params).promise();
