@@ -105,10 +105,11 @@ exports.create = async (req, res) => {
     });
     sdc.timing('timer.answer.db.findOne', Date.now() - startDb)
     sdc.timing('timer.answer.http.post', Date.now() - startApi)
+    const userOfQuestion = await User.findOne({ where: { id: question.user_id }})
 
     const params = {
         Message: {
-            ToAddresses: question.username,
+            ToAddresses: userOfQuestion.username,
             question: question,
             answer: answer
         },
