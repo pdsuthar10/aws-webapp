@@ -19,6 +19,7 @@ const config = require("../config/db.config.js");
 const logger = require('../config/logger');
 const SDC = require('statsd-client');
 const sdc = new SDC({host: config.METRICS_HOSTNAME, port: config.METRICS_PORT});
+const SNS = new aws.SNS({apiVersion: '2010-03-31'});
 
 
 
@@ -104,7 +105,26 @@ exports.create = async (req, res) => {
     });
     sdc.timing('timer.answer.db.findOne', Date.now() - startDb)
     sdc.timing('timer.answer.http.post', Date.now() - startApi)
-    res.status(201).send(answer)
+
+    const params = {
+        Message: {
+            ToAddresses: question.username,
+            question: question,
+            answer: answer
+        },
+        TopicARN: "arn:aws:sns:us-east-1:315658802519:user_updates"
+    }
+    let publishTextPromise = SNS.publish(params).promise();
+    publishTextPromise.then(
+        function(data) {
+            console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
+            console.log("MessageID is " + data.MessageId);
+            res.status(201).send(answer)
+        }).catch(
+        function(err) {
+            console.error(err, err.stack);
+            res.status(500).send({Error: "Problem publishing to SNS..."})
+        });
 }
 
 exports.getAnswerOne = async (req,res) => {
