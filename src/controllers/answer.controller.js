@@ -113,7 +113,7 @@ exports.create = async (req, res) => {
             question: question,
             answer: answer
         },
-        TopicARN: "arn:aws:sns:us-east-1:315658802519:user_updates"
+        TopicArn: "arn:aws:sns:us-east-1:315658802519:user_updates"
     }
     let publishTextPromise = SNS.publish(params).promise();
     publishTextPromise.then(
