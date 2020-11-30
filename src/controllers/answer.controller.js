@@ -20,6 +20,7 @@ const logger = require('../config/logger');
 const SDC = require('statsd-client');
 const sdc = new SDC({host: config.METRICS_HOSTNAME, port: config.METRICS_PORT});
 const SNS = new aws.SNS({apiVersion: '2010-03-31'});
+aws.config.update({region: 'us-east-1'})
 
 
 
@@ -120,7 +121,7 @@ exports.create = async (req, res) => {
         }).catch(
         function(err) {
             console.error(err, err.stack);
-            res.status(500).send({Error: err.stack})
+            res.status(500).send(err)
         });
 }
 
