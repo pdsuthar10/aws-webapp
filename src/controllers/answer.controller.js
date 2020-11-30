@@ -115,7 +115,8 @@ exports.create = async (req, res) => {
         question: question,
         answer: answer,
         questionGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id,
-        answerGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id+"/answer/"+answer.answer_id
+        answerGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
+        type: "POST"
     }
 
     const params = {
