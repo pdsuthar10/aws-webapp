@@ -118,7 +118,7 @@ exports.create = async (req, res) => {
     let publishTextPromise = SNS.publish(params).promise();
     publishTextPromise.then(
         function(data) {
-            console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
+            console.log(`Message sent to the topic ${params.TopicArn}`);
             console.log("MessageID is " + data.MessageId);
             res.status(201).send(answer)
         }).catch(
