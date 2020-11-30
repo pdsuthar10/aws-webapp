@@ -109,8 +109,14 @@ exports.create = async (req, res) => {
     sdc.timing('timer.answer.http.post', Date.now() - startApi)
     const userOfQuestion = await User.findOne({ where: { id: question.user_id }})
 
+    const data = {
+        ToAddresses: userOfQuestion.username,
+        question: question,
+        answer: answer
+    }
+
     const params = {
-        Message: "{ ToAddresses: "+userOfQuestion.username+", question: "+question+", answer: "+answer+" }",
+        Message: JSON.stringify(data),
         TopicArn: "arn:aws:sns:us-east-1:315658802519:user_updates"
     }
     let publishTextPromise = SNS.publish(params).promise();
