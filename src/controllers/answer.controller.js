@@ -111,8 +111,11 @@ exports.create = async (req, res) => {
 
     const data = {
         ToAddresses: userOfQuestion.username,
+        user: user,
         question: question,
-        answer: answer
+        answer: answer,
+        questionGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id,
+        answerGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id+"/answer/"+answer.answer_id
     }
 
     const params = {
