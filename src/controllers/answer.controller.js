@@ -110,7 +110,7 @@ exports.create = async (req, res) => {
     const userOfQuestion = await User.findOne({ where: { id: question.user_id }})
 
     const data = {
-        ToAddresses: userOfQuestion.username,
+        ToAddresses: userOfQuestion,
         user: user,
         question: question,
         answer: answer,
@@ -235,7 +235,33 @@ exports.updateAnswer = async (req,res) => {
     sdc.timing('timer.answer.db.update', Date.now() - startDb)
     logger.info("Answer updated successfully")
     sdc.timing('timer.answer.http.put', Date.now() - startApi)
-    return res.status(204).send();
+    const userOfQuestion = await User.findOne({ where: { id: question.user_id }})
+
+    const data = {
+        ToAddresses: userOfQuestion,
+        user: user,
+        question: question,
+        answer: answer,
+        questionGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id,
+        answerGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
+        type: "UPDATE"
+    }
+
+    const params = {
+        Message: JSON.stringify(data),
+        TopicArn: "arn:aws:sns:us-east-1:315658802519:user_updates"
+    }
+    let publishTextPromise = SNS.publish(params).promise();
+    publishTextPromise.then(
+        function(data) {
+            console.log(`Message sent to the topic ${params.TopicArn}`);
+            console.log("MessageID is " + data.MessageId);
+            res.status(204).send()
+        }).catch(
+        function(err) {
+            console.error(err, err.stack);
+            res.status(500).send(err)
+        });
 }
 
 exports.deleteAnswer = async (req, res) => {
@@ -306,7 +332,33 @@ exports.deleteAnswer = async (req, res) => {
     sdc.timing('timer.answer.db.delete', Date.now() - startDb)
     logger.info('Answer deleted successfully')
     sdc.timing('timer.answer.http.delete', Date.now() - startApi)
-    return res.status(204).send()
+    const userOfQuestion = await User.findOne({ where: { id: question.user_id }})
+
+    const data = {
+        ToAddresses: userOfQuestion,
+        user: user,
+        question: question,
+        answer: answer,
+        questionGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id,
+        answerGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
+        type: "DELETE"
+    }
+
+    const params = {
+        Message: JSON.stringify(data),
+        TopicArn: "arn:aws:sns:us-east-1:315658802519:user_updates"
+    }
+    let publishTextPromise = SNS.publish(params).promise();
+    publishTextPromise.then(
+        function(data) {
+            console.log(`Message sent to the topic ${params.TopicArn}`);
+            console.log("MessageID is " + data.MessageId);
+            res.status(204).send()
+        }).catch(
+        function(err) {
+            console.error(err, err.stack);
+            res.status(500).send(err)
+        });
 
 }
 
