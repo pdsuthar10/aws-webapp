@@ -121,7 +121,7 @@ exports.create = async (req, res) => {
 
     const params = {
         Message: JSON.stringify(data),
-        TopicArn: "arn:aws:sns:us-east-1:315658802519:user_updates"
+        TopicArn: process.env.TOPIC_ARN
     }
     let publishTextPromise = SNS.publish(params).promise();
     publishTextPromise.then(
@@ -250,7 +250,7 @@ exports.updateAnswer = async (req,res) => {
 
     const params = {
         Message: JSON.stringify(data),
-        TopicArn: "arn:aws:sns:us-east-1:315658802519:user_updates"
+        TopicArn: process.env.TOPIC_ARN
     }
     let publishTextPromise = SNS.publish(params).promise();
     publishTextPromise.then(
@@ -347,7 +347,7 @@ exports.deleteAnswer = async (req, res) => {
 
     const params = {
         Message: JSON.stringify(data),
-        TopicArn: "arn:aws:sns:us-east-1:315658802519:user_updates"
+        TopicArn: process.env.TOPIC_ARN
     }
     let publishTextPromise = SNS.publish(params).promise();
     publishTextPromise.then(
