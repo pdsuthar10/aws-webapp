@@ -114,8 +114,8 @@ exports.create = async (req, res) => {
         user: user,
         question: question,
         answer: answer,
-        questionGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id,
-        answerGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
+        questionGetApi: process.env.ENVIRONMENT+"."+process.env.DOMAIN+"/v1/question/"+question.question_id,
+        answerGetApi: process.env.ENVIRONMENT+"."+process.env.DOMAIN+"/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
         type: "POST"
     }
 
@@ -243,8 +243,8 @@ exports.updateAnswer = async (req,res) => {
         question: question,
         updatedAnswerText: req.body.answer_text,
         answer: answer,
-        questionGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id,
-        answerGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
+        questionGetApi: process.env.ENVIRONMENT+"."+process.env.DOMAIN+"/v1/question/"+question.question_id,
+        answerGetApi: process.env.ENVIRONMENT+"."+process.env.DOMAIN+"/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
         type: "UPDATE"
     }
 
@@ -340,8 +340,8 @@ exports.deleteAnswer = async (req, res) => {
         user: user,
         question: question,
         answer: answer,
-        questionGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id,
-        answerGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
+        questionGetApi: process.env.ENVIRONMENT+"."+process.env.DOMAIN+"/v1/question/"+question.question_id,
+        answerGetApi: process.env.ENVIRONMENT+"."+process.env.DOMAIN+"/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
         type: "DELETE"
     }
 
