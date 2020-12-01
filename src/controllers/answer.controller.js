@@ -227,7 +227,7 @@ exports.updateAnswer = async (req,res) => {
     }
 
     startDb = Date.now()
-    const updatedAnswer = await Answer.update(
+    await Answer.update(
         { answer_text: req.body.answer_text },
         {
             where: { answer_id: req.params.answer_id}
@@ -241,7 +241,7 @@ exports.updateAnswer = async (req,res) => {
         ToAddresses: userOfQuestion,
         user: user,
         question: question,
-        updatedAnswerText: updatedAnswer.answer_text,
+        updatedAnswerText: req.body.answer_text,
         answer: answer,
         questionGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id,
         answerGetApi: "dev.suthar-priyam.me/v1/question/"+question.question_id+"/answer/"+answer.answer_id,
