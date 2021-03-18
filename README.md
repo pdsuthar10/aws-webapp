@@ -1,5 +1,5 @@
 # CSYE 6225 - Fall 2020
-A Node.js web app that runs different REST API endpoints on backend to create, authenticate, get and update user information using MySQL as database.
+A Node.js web app that runs different REST API endpoints on backend to create, authenticate, get and update user information using MySQL as database.The web app kind of resembles Quora, a platform for questions and users from all over the world answer them.
 
 ## Technology Stack
 * Backend Technology: Node JS
